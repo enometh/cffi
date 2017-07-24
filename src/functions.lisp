@@ -102,11 +102,16 @@
 
 (defvar *foreign-structures-by-value*
   (lambda (&rest args)
-    (declare (ignore args))
+    (declare (ignorable args))
     (restart-case
         (error "Unable to call structures by value without cffi-libffi loaded.")
       (load-cffi-libffi () :report "Load cffi-libffi."
-        (asdf:operate 'asdf:load-op 'cffi-libffi))))
+#+(and asdf (not mk-defsystem))
+        (asdf:operate 'asdf:load-op 'cffi-libffi)
+#+mk-defsystem
+        (mk:oos :cffi-libffi :load)   ;madhu 160514
+        (funcall *foreign-structures-by-value* args)
+        )))
   "A function that produces a form suitable for calling structures by value.")
 
 (defun foreign-funcall-form (thing options args pointerp)
