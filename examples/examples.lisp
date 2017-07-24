@@ -65,7 +65,10 @@
   (n test-enum))
 
 (defun cffi-version ()
-  (asdf:component-version (asdf:find-system 'cffi)))
+  #+(and asdf (not mk-defsystem))
+  (asdf:component-version (asdf:find-system 'cffi))
+  #+mk-defsystem
+  "0.19.0")
 
 (defun run-examples ()
   (format t "~&;;; CFFI version ~A on ~A ~A:~%"
