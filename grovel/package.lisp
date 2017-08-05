@@ -23,8 +23,17 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
+#+(and asdf (not mk-defsystem))
 (uiop:define-package #:cffi-grovel
-  (:mix #:cffi-toolchain #:asdf #:uiop #:alexandria #:common-lisp)
+  (:mix #:cffi-toolchain #:asdf #:uiop #:alexandria #:common-lisp))
+
+(defpackage #:cffi-grovel
+  (:use "CL" #+nil "ALEXANDRIA" "CFFI-TOOLCHAIN")
+  (:import-from "UIOP" "STRCAT" "NEST" "RUN-PROGRAM")
+  (:import-from "ALEXANDRIA" "WITH-UNIQUE-NAMES" "SYMBOLICATE" "APPENDF"
+   "FORMAT-SYMBOL" "ENSURE-LIST")
+  #+(and asdf (not mk-defsystem))
+  (:import-from "ASDF" "COMPILE-OP" "LOAD-SOURCE-OP"  "LINK-OP" "LOAD-OP" "SYSTEM")
   (:export
    ;; Class name
    #:grovel-file

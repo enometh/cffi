@@ -6,6 +6,7 @@
 ;;; Copyright (C) 2005-2006, Emily Backes <lucca@accela.net>
 ;;; Copyright (C) 2007, Stelian Ionescu <sionescu@cddr.org>
 ;;; Copyright (C) 2007, Luis Oliveira <loliveira@common-lisp.net>
+;;; Copyright (C) 2016, Madhu <enometh@net.meer>
 ;;;
 ;;; Permission is hereby granted, free of charge, to any person
 ;;; obtaining a copy of this software and associated documentation
@@ -29,6 +30,18 @@
 ;;;
 
 (in-package #:cffi-grovel)
+
+;; add the cffi directory to the include path to make common.h visible
+(defvar *cffi-grovel-common-h-dir*
+  (namestring (truename
+               (
+                #+(and asdf (not mk-defsytem))
+                  asdf::system-relative-pathname
+                  #+mk-defsystem
+                  mk::system-relative-pathname
+                  :cffi "")))
+  #+nil
+  "/home/madhu/cmu/Authors/loliveira/cffi/")
 
 ;;;# Error Conditions
 
@@ -784,7 +797,9 @@ string."
       lisp-file)))
 
 (defun cc-include-grovel-argument ()
-  (format nil "-I~A" (truename (system-source-directory :cffi-grovel))))
+  (or (and *cffi-grovel-common-h-dir*
+           (format nil "-I~A" *cffi-grovel-common-h-dir*))
+      (format nil "-I~A" (truename (system-source-directory :cffi-grovel)))))
 
 ;;; *PACKAGE* is rebound so that the IN-PACKAGE form can set it during
 ;;; *the extent of a given wrapper file.
