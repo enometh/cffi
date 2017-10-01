@@ -45,8 +45,16 @@
 ;;; (eg: on Linux LD_LIBRARY_PATH, /etc/ld.so.cache, /usr/lib/, /lib)
 ;;; do we try to find the library ourselves.
 
+;madhu 250328 - reintroduce for default path
+;; #-darwin ?
+(defun explode-path-environment-variable (name)
+  (mapcar #'uiop:ensure-directory-pathname
+          (split-if (lambda (c) (eql #\: c))
+                    (uiop:getenv name)
+                    :elide)))
+
 (defvar *foreign-library-directories*
-  '()
+  '((explode-path-environment-variable "LD_LIBRARY_PATH"))
   "List onto which user-defined library paths can be pushed.")
 
 (defun mini-eval (form)
@@ -272,6 +280,7 @@ ourselves."
               (pathname path))
     (simple-error (error)
       (let ((dirs (parse-directories *foreign-library-directories*)))
+        (warn "DIRS=~S" dirs)
         (if-let (file (find-file path (append search-path dirs)))
           (handler-case
               (values (%load-foreign-library name (native-namestring file))
@@ -283,6 +292,7 @@ ourselves."
 (defun try-foreign-library-alternatives (name library-list &optional search-path)
   "Goes through a list of alternatives and only signals an error when
 none of alternatives were successfully loaded."
+  (warn "search-path=~S" search-path)
   (dolist (lib library-list)
     (multiple-value-bind (handle pathname)
         (ignore-errors (load-foreign-library-helper name lib search-path))
