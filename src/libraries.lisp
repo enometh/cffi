@@ -46,7 +46,7 @@
 ;;; do we try to find the library ourselves.
 
 (defvar *foreign-library-directories*
-  '()
+  '((explode-path-environment-variable "LD_LIBRARY_PATH"))
   "List onto which user-defined library paths can be pushed.")
 
 (defun mini-eval (form)
@@ -272,6 +272,7 @@ ourselves."
               (pathname path))
     (simple-error (error)
       (let ((dirs (parse-directories *foreign-library-directories*)))
+        (warn "DIRS=~S" dirs)
         (if-let (file (find-file path (append search-path dirs)))
           (handler-case
               (values (%load-foreign-library name (native-namestring file))
@@ -283,6 +284,7 @@ ourselves."
 (defun try-foreign-library-alternatives (name library-list &optional search-path)
   "Goes through a list of alternatives and only signals an error when
 none of alternatives were successfully loaded."
+  (warn "search-path=~S" search-path)
   (dolist (lib library-list)
     (multiple-value-bind (handle pathname)
         (ignore-errors (load-foreign-library-helper name lib search-path))
