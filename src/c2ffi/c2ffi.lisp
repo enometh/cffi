@@ -59,7 +59,7 @@
   #+(not (or linux android)) "")
 
 (defun local-arch ()
-  (strcat (local-cpu) (local-vendor) (local-os) (local-environment)))
+  (uiop/utility:strcat (local-cpu) (local-vendor) (local-os) (local-environment)))
 
 (defparameter *target-archs*
   '("i686-pc-linux-gnu"
@@ -152,9 +152,9 @@
 (defun spec-path (base-name &key version (arch (local-arch)))
   (check-type base-name pathname)
   (make-pathname :defaults base-name
-                 :name (strcat (pathname-name base-name)
+                 :name (uiop/utility:strcat (pathname-name base-name)
                                (if version
-                                   (strcat "-" version)
+                                   (uiop/utility:strcat "-" version)
                                    "")
                                "."
                                arch)
@@ -196,9 +196,9 @@
                      (warn "Failed to generate spec for other arch: ~S" arch))))
                (find-local-spec header-file-path))))
       (if (and spec-path
-               (not (zerop (with-input-from-file (s spec-path)
+               (not (zerop (alexandria:with-input-from-file (s spec-path)
                              (file-length s))))
-               (uiop:timestamp< (file-write-date header-file-path)
+               (< #|uiop:timestamp<|# (file-write-date header-file-path)
                                 (file-write-date spec-path)))
           spec-path            ; it's up to date, just return it as is
           (restart-case
@@ -212,7 +212,7 @@
                       (not (null spec-path)))
               ;; Update the last modification time. Yes, it's convoluted and wasteful,
               ;; but I can't see any other way.
-              (with-staging-pathname (tmp-file spec-path)
-                (copy-file spec-path tmp-file))
+              (uiop/stream:with-staging-pathname (tmp-file spec-path)
+                (alexandria:copy-file spec-path tmp-file))
               ;; The return value of RESTART-CASE
               spec-path))))))
