@@ -3775,8 +3775,7 @@ pointer.  The return value is not used.
 
 @table @var
 @item vars
-A list with each element a symbol, or list of length two with the
-first element @code{:pointer} and the second a symbol.
+A list of binding descriptors; described below.
 
 @item ptr
 A foreign pointer to a structure.
@@ -3789,11 +3788,44 @@ A list of forms to be executed.
 @end table
 
 @subheading Description
-The @code{with-foreign-slots} macro creates local symbol macros for each
-var in @var{vars} to reference foreign slots in @var{ptr} of @var{type}.
-If the var is a list starting with @code{:pointer}, it will bind the
-pointer to the slot (rather than the value). It is similar to Common
-Lisp's @code{with-slots} macro.
+The @code{with-foreign-slots} macro establishes a lexical environment
+for referring to the foreign slots of @var{type} addressed by @var{ptr}.
+
+This is similar to the Common Lisp's @code{with-slots} macro. Within the
+context of @code{with-foreign-slots}, if the binding form is a symbol
+@code{slot-name} which names the slot, the foreign slot value can be
+specified by using @code{slot-name} as if it were a lexically bound
+variable.  If the binding form is a list @code{(variable-name
+slot-name)} then @code{variable-name} is bound to the foreign slot value
+of @code{slot-name}.
+
+This syntax is extended to enable access to foreign slot pointers. If
+the binding form is a list of two elements which includes the :POINTER
+keyword i.e. @code{(:pointer slot-name)}, then @code{slot-name} is bound
+to foreign slot pointer instead of the foreign slot value.
+
+In light of this extension each binding in @var{vars} may take one of
+the following eight forms
+
+@code{slot-name} a symbol which is the name of the slot and is bound to
+the value of the slot
+
+@code{(:pointer slot-name)}
+@code{(slot-name :pointer)}
+
+Each of these creates a binding to a foreign pointer that addresses the
+slot rather than its value
+
+@code{(variable-name slot-name)} binds the foreign slot value to a
+variable with a different name.
+
+@code{(variable-name (slot-name :pointer))}
+@code{(variable-name (:pointer slot-name))}
+@code{((slot-name :pointer) variable-name)}
+@code{((:pointer slot-name) variable-name)}
+
+Each of these binds variable-name to the foreign slot pointer of the
+named slot.
 
 @subheading Examples
 @lisp
@@ -3815,9 +3847,9 @@ CFFI> (with-foreign-object (time :int)
               (foreign-funcall "time" :pointer (null-pointer) :int))
         (foreign-funcall "gmtime" :pointer time (:pointer (:struct tm))))
 @result{} #<A Mac Pointer #x102A30>
-CFFI> (with-foreign-slots ((sec min hour mday mon year) * (:struct tm))
+CFFI> (with-foreign-slots ((sec min hour (day-of-month mday) mon year) * (:struct tm))
         (format nil "~A:~A:~A, ~A/~A/~A"
-                hour min sec (+ 1900 year) mon mday))
+                hour min sec (+ 1900 year) mon day-of-month))
 @result{} "7:22:47, 2005/8/2"
 @end lisp
 
