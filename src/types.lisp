@@ -847,20 +847,32 @@ The foreign array must be freed with foreign-array-free."
 foreign slots in PTR of TYPE. Similar to WITH-SLOTS.
 Each var can be of the form: slot-name - in which case slot-name will
 be bound to the value of the slot or: (:pointer slot-name) - in which
-case slot-name will be bound to the pointer to that slot."
+case slot-name will be bound to the pointer to that slot.
+
+Use (VAR-NAME SLOT-NAME) to bind VAR-NAME to foreign-slot-value of the
+slot named SLOT-NAME. In view of the above extension Each binding can
+be one the following forms:
+
+SLOT-NAME (VAR-NAME SLOT-NAME) (:POINTER SLOT-NAME) (:POINTER (VAR-NAME SLOT-NAME)) (VAR-NAME (:POINTER SLOT-NAME))
+"
+  (when (consp type)
+    (assert (not (eql (car type) 'quote))))
   (let ((ptr-var (gensym "PTR")))
     `(let ((,ptr-var ,ptr))
        (symbol-macrolet
            ,(loop :for var :in vars
               :collect
-              (if (listp var)
+              (if (atom var)
+                  `(,var (foreign-slot-value ,ptr-var ',type ',var))
                   (if (eq (first var) :pointer)
-                      `(,(second var) (foreign-slot-pointer
-                                       ,ptr-var ',type ',(second var)))
-                      (error
-                       "Malformed slot specification ~a; must be:`name' or `(:pointer name)'"
-                       var))
-                  `(,var (foreign-slot-value ,ptr-var ',type ',var))))
+                      (if (atom (second var))
+                          `(,(second var) (foreign-slot-pointer ,ptr-var ',type ',(second var)))
+                          `(,(first (second var)) (foreign-slot-pointer ,ptr-var ',type ',(second (second var)))))
+                      (if (atom (second var))
+                          `(,(first var) (foreign-slot-value ,ptr-var ',type ',(second var)))
+                          (if (eq (first (second var)) :pointer)
+                              `(,(first var) (foreign-slot-pointer ,ptr-var ',type ',(second (second var))))
+                              (error  "Malformed slot specificcation ~a: must be VAR or (VAR NAME) or (:POINTER VAR) or (VAR (:POINTER NAME)) or (:POINTER (VAR NAME))" var))))))
          ,@body))))
 
 ;;; We could add an option to define a struct instead of a class, in
