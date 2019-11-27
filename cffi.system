@@ -163,8 +163,8 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
  :binary-extension "so"
  :compiler #'(lambda (input-file &rest args &key output-file)
 	       (format t "~S~%" `(compile-c-test-lib ,input-file ,@args))
-	       (user::with-open-pipe (stream (format nil "cc -o ~S ~S -shared -Wall -std=c99 -pedantic -fPIC -lm" (namestring output-file) (namestring input-file)))
-		 (format t "~A~&" (user::slurp-stream stream))
+	       (cl-user::with-open-pipe (stream (format nil "cc -o ~S ~S -shared -Wall -std=c99 -pedantic -fPIC -lm" (namestring output-file) (namestring input-file)))
+		 (format t "~A~&" (cl-user::slurp-stream stream))
 		 (values output-file t t)))
  :loader #'(lambda (filespec &rest args)
 	     (format t "~S~%" `(load-c-test-lib ,filespec ,@args))
