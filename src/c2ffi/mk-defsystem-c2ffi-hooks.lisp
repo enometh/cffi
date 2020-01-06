@@ -94,7 +94,7 @@ the generated definitions via C2FFI-SPEC-PACKAGE."
     :source-extension "h"
     :binary-extension (cdr mk::*filename-extensions*))
 
-(defun mk-clean-c2ffi (system &key dry-run)
+(defun mk-clean-c2ffi (system &key dry-run (handle-errors t))
   (let (ret)
     (mk::%mk-traverse
      (mk:find-system system)
@@ -122,5 +122,11 @@ the generated definitions via C2FFI-SPEC-PACKAGE."
     (prog1
 	ret
       (unless dry-run
-	(mapcar #'delete-file ret)
-	))))
+	(handler-bind ((error (lambda (c)
+				(let ((r (find-restart 'cont)))
+				  (when (and r handle-errors)
+				    (invoke-restart r))))))
+	  (mapcar #'(lambda (x)
+		      (with-simple-restart (cont "Cont")
+			(delete-file x)))
+	    ret))))))
