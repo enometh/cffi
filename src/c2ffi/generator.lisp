@@ -705,6 +705,10 @@ target package."
     (assert (member tag '(":struct" "struct" ":union" "union") :test 'equal))
     (flet ((process-field (json-entry)
              (with-json-values (json-entry (field-name :name) bit-offset type)
+               (if (or (null field-name)
+                       (equal field-name ""))
+                   (progn (warn "field-name=~S" field-name)
+                          (setq field-name "ANONYMOUS")))
                (let ((cffi-type (with-allowed-foreign-type-errors
                                     ('failed :enabled *allow-skipping-struct-fields*)
                                   (json-type-to-cffi-type type `(,kind ,struct-name ,field-name)))))
