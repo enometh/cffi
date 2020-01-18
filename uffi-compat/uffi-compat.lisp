@@ -26,8 +26,18 @@
 ;;; DEALINGS IN THE SOFTWARE.
 ;;;
 
-;;; Code borrowed from UFFI is Copyright (c) Kevin M. Rosenberg.
+#+mkcl ;; rename the nickname UFFI for FFI to UFFI-ORIG
+(eval-when (load eval compile)
+  (when (find "UFFI" (package-nicknames "FFI") :test #'equal)
+    (unwind-protect (progn (si:reopen-package "FFI")
+                           ;; first add a nickname UFFI-ORIG to FFI
+                           (rename-package (find-package "FFI") "FFI" (adjoin "UFFI-ORIG" (package-nicknames "FFI") :test #'equal))
+                           ;; remove the existing nickname UFFI from FFI
+                           (rename-package (find-package "FFI") "FFI" (remove "UFFI" (package-nicknames "FFI") :test #'equal)))
+      (si:close-package "FFI"))))
 
+
+;;; Code borrowed from UFFI is Copyright (c) Kevin M. Rosenberg.
 (defpackage #:cffi-uffi-compat
   (:nicknames #:uffi) ;; is this a good idea?
   (:use #:cl)
@@ -539,7 +549,8 @@ library type if type is not specified."
   #+lucid (lcl:environment-variable (string var))
   #+(or mcl ccl) (ccl::getenv var)
   #+sbcl (sb-ext:posix-getenv var)
-  #-(or allegro clisp cmucl ecl scl gcl lispworks lucid mcl ccl sbcl)
+  #+mkcl (mkcl:getenv var)
+  #-(or allegro clisp cmucl ecl scl gcl lispworks lucid mcl ccl sbcl mkcl)
   (error 'not-implemented :proc (list 'getenv var)))
 
 ;; Taken from UFFI's src/os.lisp
@@ -586,6 +597,12 @@ output to *trace-output*.  Returns the shell's exit code."
     #+ecl
     (nth-value 1
                (ext:run-program
+                "/bin/sh" (list "-c" command)
+                :input nil :output output :error nil :wait t))
+
+    #+mkcl
+    (nth-value 1
+               (mkcl:run-program
                 "/bin/sh" (list "-c" command)
                 :input nil :output output :error nil :wait t))
 
