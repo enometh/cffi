@@ -688,7 +688,7 @@ unicode-simple-string. prefer the unoptimized implementation
   `(babel:string-to-octets
     (apply #'concatenate 'string
            (list ,str (if ,null-terminate
-                          #.(string #\Nul)
+                          ,(string #\Nul)
                           "")))
     :encoding (or ,encoding cffi:*default-foreign-encoding*)))
 
