@@ -1,6 +1,6 @@
 (in-package "CFFI/C2FFI")
 
-(defvar *mk-c2ffi-file-compiler-options*
+(defvar *mk-c2ffi-process-spec-file-options*
   '(
     :allow-pointer-type-simplification
     :allow-skipping-struct-fields
@@ -18,6 +18,11 @@
     :exclude-sources
     :include-definitions
     :exclude-definitions))
+
+(defvar *mk-c2ffi-generate-spec-file-options*
+  '(:arch
+    :sys-include-paths
+    :ignore-error-status))
 
 (defun plist-partition (plist keys)
   ;; Return as values plist-with-keys plist-without-keys
@@ -47,6 +52,7 @@ the generated definitions via C2FFI-SPEC-PACKAGE."
 				     (pathname input-file)))
 	   output-file))
 	 package-args
+	 generate-spec-args
 	 processor-args
 	 (tmp-file (make-pathname :name
 				  (concatenate 'string
@@ -57,17 +63,22 @@ the generated definitions via C2FFI-SPEC-PACKAGE."
     (multiple-value-setq (package-args args)
       (plist-partition args '(:c2ffi-spec-package)))
     (multiple-value-setq (processor-args args)
-      (plist-partition args *mk-c2ffi-file-compiler-options*))
+      (plist-partition args *mk-c2ffi-process-spec-file-options*))
+    (multiple-value-setq (generate-spec-args args)
+      (plist-partition args *mk-c2ffi-generate-spec-file-options*))
+    (when args
+      (warn "MK-C2FFI-CC: UNUSED ~A" ARGS))
     ;; MK-OOS :FORCE wont help!  input-file it is always used. This is
     ;; because when we edit spec-files by hand we don't want to
     ;; regenerate them unless the input (header) file has changed.
     (when (or (not (probe-file spec-file))
 	      (> (file-write-date input-file) (file-write-date spec-file)))
       (let ((cffi/c2ffi::*known-archs* nil))
-	(cffi/c2ffi::generate-spec-using-c2ffi
-	 input-file spec-file
-	 ;;:arch "i686-pc-linux-gnu"
-	 )))
+	(apply #'cffi/c2ffi::generate-spec-using-c2ffi
+	       input-file spec-file
+	       generate-spec-args
+	       ;;:arch "i686-pc-linux-gnu"
+	       )))
     (when (or (not (probe-file tmp-file))
 	      (> (file-write-date spec-file) (file-write-date tmp-file)))
       (let ((tmp (apply #'cffi/c2ffi::process-c2ffi-spec-file
