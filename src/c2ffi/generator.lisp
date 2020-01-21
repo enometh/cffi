@@ -73,10 +73,11 @@
 (defvar *c2ffi-output-stream*)
 
 (defun output/export (names package)
-  (let ((names (alexandria:ensure-list names)))
-    ;; Make sure we have something PRINT-READABLY as a package name,
-    ;; i.e. not a SIMPLE-BASE-STRING on SBCL.
-    (output/code `(export ',names ',(make-symbol (package-name package))))))
+  (when names
+    (let ((names (alexandria:ensure-list names)))
+      ;; Make sure we have something PRINT-READABLY as a package name,
+      ;; i.e. not a SIMPLE-BASE-STRING on SBCL.
+      (output/code `(export ',names ',(make-symbol (package-name package)))))))
 
 (defun output/code (form)
   (check-type form cons)
