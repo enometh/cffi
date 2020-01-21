@@ -384,6 +384,11 @@
                 (return-from ,type-block ,on-failure-form)))))
         ,@body))))
 
+(cffi:defcstruct (:opaque-long-double :size 16))
+
+#+nil
+(cffi:foreign-type-size '(:struct :opaque-long-double))
+
 (defun %json-type-to-cffi-type (json-entry)
   (with-json-values (json-entry tag)
     (let ((cffi-type
@@ -406,7 +411,7 @@
                 (":float"              :float)
                 (":double"             :double)
                 ;; TODO FIXME
-                ;;(":long-double"        :long-double)
+                (":long-double"        '(:struct :opaque-long-double))
                 )
               ;; return the result of the condition expression
               )
