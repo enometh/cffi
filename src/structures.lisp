@@ -54,6 +54,39 @@
                        (foreign-struct-slot-value p slot)))
         plist)))
 
+;; To handle nested structures Eg.
+;;
+;; typedef struct record1 { int a; int b; } record1_type;
+;; typedef struct record2a { struct record1 r; int c; } record2a_type;
+;; typedef struct record2b { record1_type r; int c } record2b_type;
+;;
+;; (defcstruct record1 (a :int) (b :int))
+;; (defctype record1-type (:struct record1))
+;; (defcstruct record2a (r (:struct record1)) (c :int))
+;; (defcstruct record2b (r record1-type) (c :int))
+;;
+;;
+;; record2a_type and record2b_type are identical. However when
+;; translating libffi fsbv record2b_type will put a pointer in field r
+;; rather than translating the typedef:
+;;
+;; foreign-struct-slot-value (ptr aggregate-struct-slot)
+;; (convert-from-foreign  ptr+offset 'record1_type)
+;; (translate-from-foreign ptr+offset (parse-type 'record1-type))
+;;
+;; (setq $a (cffi:foreign-alloc 'record1-type))
+;; (translate-from-foreign $a (parse-type 'record1-type)) ; pointer
+;; (translate-from-foreign $a (parse-type '(:struct record1))) ; list
+;;
+;; the last two should both retrun lists
+;; which it will after the following definition:
+
+(defmethod translate-to-foreign (value (type foreign-typedef))
+  (translate-to-foreign value (actual-type type)))
+
+(defmethod translate-from-foreign (value (type foreign-typedef))
+  (translate-from-foreign value (follow-typedefs type)))
+
 (defmethod free-translated-object (ptr (type foreign-struct-type) freep)
   (unless (bare-struct-type-p type)
     ;; Look for any pointer slots and free them first
