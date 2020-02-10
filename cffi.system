@@ -185,7 +185,7 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
 (mk:defsystem :cffi-tests
   :source-pathname *cffi-source-directory*
   :binary-pathname *cffi-binary-directory*
-  :depends-on (:cffi #-ecl :rt)
+  :depends-on (:cffi #-ecl :rt :cffi-grovel :cffi-libffi :bordeaux-threads)
   :source-extension "lisp"
   :components
   ((:module "tests"
@@ -202,9 +202,11 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
      (:file "foreign-globals")
      (:file "memory")
      (:file "strings")
+     (:file "arrays")
      (:file "struct")
      (:file "union")
      (:file "enum")
+     (:file "fsbv")
      (:file "misc-types")
      (:file "misc")
      #|
@@ -344,9 +346,9 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
   :components
   ((:module "examples" :components
      ((:file "package")
-      ("wrapper-example" :depends-on ("package") :language :cffi-wrapper)
+      (:file "wrapper-example" :depends-on ("package") :language :cffi-wrapper)
       ;;generated "wrapper-example.grovel-tmp"
-      ("grovel-example" :depends-on ("package") :language :cffi-grovel)
+      (:file "grovel-example" :depends-on ("package") :language :cffi-grovel)
       ;;generated "grovel-example__grovel.grovel-tmp"
       (:file "main-example" :depends-on ("package"))))))
 
