@@ -22,6 +22,7 @@
 (defvar *mk-c2ffi-generate-spec-file-options*
   '(:arch
     :sys-include-paths
+    :include-paths
     :ignore-error-status))
 
 (defun plist-partition (plist keys)

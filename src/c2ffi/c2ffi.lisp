@@ -100,7 +100,7 @@
                                         :ignore-error-status ignore-error-status))))
 
 (defun generate-spec-using-c2ffi (input-header-file output-spec-path
-                                 &key arch sys-include-paths ignore-error-status)
+                                 &key arch sys-include-paths ignore-error-status include-paths)
   "Run c2ffi on `INPUT-HEADER-FILE`, outputting to `OUTPUT-FILE` and
 `MACRO-OUTPUT-FILE`, optionally specifying a target triple `ARCH`."
   (format *debug-io* "; cffi/c2ffi is generating ~S~%" output-spec-path)
@@ -110,9 +110,14 @@
     nil ; workaround for an UIOP bug; delme eventually (attila, 2016-01-27).
     :close-stream
     (let* ((arch (when arch (list "--arch" arch)))
-           (sys-include-paths (loop
+           (sys-include-paths (append
+                               (loop
                                 :for dir :in sys-include-paths
-                                :append (list "--sys-include" dir))))
+                                :append (list "--sys-include" dir))
+                               (loop
+                                 :for dir :in include-paths
+                                 :append (list "--include" dir))
+                               )))
       ;; Invoke c2ffi to first emit C #define's into TMP-MACRO-FILE. We ask c2ffi
       ;; to first generate a file of C global variables that are assigned the
       ;; value of the corresponding #define's, so that in the second pass below
