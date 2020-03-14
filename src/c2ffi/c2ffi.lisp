@@ -82,7 +82,7 @@
 
 (defvar *c2ffi-executable* "c2ffi")
 (defvar *c2ffi-extra-arguments* (list))
-(defvar *trace-c2ffi* nil)
+(defvar *trace-c2ffi* t)
 
 (defun c2ffi-executable-available? ()
   ;; This is a hack to determine if c2ffi exists; it assumes if it
