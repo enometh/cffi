@@ -169,7 +169,7 @@
 
 #+ecl
 (defun ecl-toolchain-parameters ()
-  (setf *cc* c:*cc*
+  (setf *cc* "gcc" ;; ;madhu 200317 c:*cc* ; "x86_64-pc-linux-gnu-g++" - gcc can't handle iolib's grovel file
         *cc-flags* `(,@(parse-command-flags c::*cc-flags*)
                      ,@(parse-command-flags c:*user-cc-flags*))
         ;; For the below, we just use c::build-FOO
