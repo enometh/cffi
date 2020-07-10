@@ -314,11 +314,11 @@ WITH-POINTER-TO-VECTOR-DATA."
             '#:cffi-callbacks)))
 
 (defmacro %defcallback (name rettype arg-names arg-types body
-                        &key convention)
+                        &key convention export-p)
   (declare (ignore convention))
-  (let ((cb-name (intern-callback name)))
+  (let ((cb-name (if export-p name (intern-callback name))))
     `(progn
-       (ffi:defcallback (,cb-name :cdecl)
+       (ffi:defcallback (,cb-name :cdecl ,@(and export-p '(:export-p)))
                         ,(cffi-type->mkcl-type rettype)
                         ,(mapcar #'list arg-names
                                  (mapcar #'cffi-type->mkcl-type arg-types))
