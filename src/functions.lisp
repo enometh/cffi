@@ -70,7 +70,8 @@
   (destructuring-bind (&key (library :default libraryp)
                             (cconv nil cconv-p)
                             (calling-convention cconv calling-convention-p)
-                            (convention calling-convention))
+                            (convention calling-convention)
+                            (export-p nil export-p-supplied-p))
       options
     (when cconv-p
       (warn-obsolete-argument :cconv :convention))
@@ -415,13 +416,17 @@ arguments and does type promotion for the variadic arguments."
 (defun parse-defcallback-options (options)
   (destructuring-bind (&key (cconv :cdecl cconv-p)
                             (calling-convention cconv calling-convention-p)
-                            (convention calling-convention))
+                            (convention calling-convention)
+                            (export-p nil export-p-supplied-p))
       options
     (when cconv-p
       (warn-obsolete-argument :cconv :convention))
     (when calling-convention-p
       (warn-obsolete-argument :calling-convention :convention))
-    (list :convention convention)))
+    #-(or ecl mkcl)
+    (when export-p-supplied-p
+      (warn "bogus argument :export-p: ~A only valid for ECL/MKCL" export-p))
+    `(:convention ,convention ,@(when export-p '(:export-p t) ))))
 
 (defmacro defcallback (name-and-options return-type args &body body)
   (multiple-value-bind (body declarations)

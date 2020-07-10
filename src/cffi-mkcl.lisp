@@ -275,17 +275,57 @@ WITH-POINTER-TO-VECTOR-DATA."
                     (symbol-name name))
             '#:cffi-callbacks)))
 
+(eval-when (load eval compile)
+  (if (find-symbol "C-EXPORT-FNAME" "MKCL")
+      (pushnew :mkcl-c-export-fname *features*)))
+
+#+mkcl-c-export-fname
+(defun lisp-to-c-name (obj)
+  "Translate Lisp function name object prin1 representation to valid C
+identifier name. Does no mangling"
+  (and obj
+       (map 'string
+            #'(lambda (c)
+                (let ((cc (char-code c)))
+                  (if (or (<= #.(char-code #\a) cc #.(char-code #\z))
+                          (<= #.(char-code #\0) cc #.(char-code #\9)))
+                      c #\_)))
+            (string-downcase (prin1-to-string obj)))))
+
+#-mkcl-c-export-fname
 (defmacro %defcallback (name rettype arg-names arg-types body
-                        &key convention)
+                        &key convention export-p)
   (declare (ignore convention))
-  (let ((cb-name (intern-callback name)))
+  (let ((cb-name (if export-p name (intern-callback name))))
     `(progn
-       (ffi:defcallback (,cb-name :cdecl)
+       (ffi:defcallback (,cb-name :cdecl ,@(and export-p '(:export-p)))
                         ,(cffi-type->mkcl-type rettype)
                         ,(mapcar #'list arg-names
                                  (mapcar #'cffi-type->mkcl-type arg-types))
                         ;;(block ,cb-name ,@body)
                         (block ,cb-name ,body))
+       (setf (gethash ',name *callbacks*) ',cb-name))))
+
+
+#+mkcl-c-export-fname
+(defmacro %defcallback (name rettype arg-names arg-types body
+                        &key convention export-p)
+  (declare (ignore convention))
+  (let ((cb-name (if export-p name (intern-callback name))))
+    `(progn
+       ;;madhu 210501 mkcl-1.1.11+ git supports the mkcl:c-export-name
+       ;;declaration so use that for export-p. also defcallback
+       ;;already wraps up body in a block for us so we don't have to
+       ;;wrap it again
+       ,@(and export-p
+              `((declaim (mkcl:c-export-fname
+                          (,name ,(lisp-to-c-name name))))))
+       (ffi:defcallback (,cb-name :cdecl)
+                        ,(cffi-type->mkcl-type rettype)
+                        ,(mapcar #'list arg-names
+                                 (mapcar #'cffi-type->mkcl-type arg-types))
+                        ;;(block ,cb-name ,@body)
+                        ,body)
        (setf (gethash ',name *callbacks*) ',cb-name))))
 
 (defun %callback (name)
