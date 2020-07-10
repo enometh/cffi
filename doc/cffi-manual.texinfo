@@ -6546,7 +6546,7 @@ CFFI> (callback sum)
 @subheading Syntax
 @Macro{defcallback name-and-options return-type arguments &body body @res{} name}
 
-name-and-options ::= name | (name &key convention) @*
+name-and-options ::= name | (name &key convention export-p) @*
 arguments ::= (@{ (arg-name arg-type) @}*) @*
 
 @subheading Arguments and Values
@@ -6566,6 +6566,12 @@ A foreign type.
 
 @item convention
 One of @code{:cdecl} (default) or @code{:stdcall}.
+
+@item export-p
+A boolean. (On suitably patched ECL/MKCL implementations arrange
+to export the c-name of the symbol NAME so it is callable from
+external C code when the callback is compiled to a shared library.)
+
 @end table
 
 @subheading Description
