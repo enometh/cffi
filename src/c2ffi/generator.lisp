@@ -386,6 +386,10 @@
 
 (cffi:defcstruct (:opaque-long-double :size 16))
 
+(cffi:defcstruct (:int128 :size 16))
+(cffi:defcstruct (:uint128 :size 16))
+(cffi:defcstruct (:builtin-va-list :size 8)) ;array type sizeof(va_list)=24
+
 #+nil
 (cffi:foreign-type-size '(:struct :opaque-long-double))
 
@@ -412,6 +416,9 @@
                 (":double"             :double)
                 ;; TODO FIXME
                 (":long-double"        '(:struct :opaque-long-double))
+                (":unsigned-__int128"  :uint128)
+                (":__int128"	       :int128)
+                ("__builtin_va_list"   :builtin-va-list)
                 )
               ;; return the result of the condition expression
               )
