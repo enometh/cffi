@@ -175,26 +175,41 @@
       (parse-args-and-types fixed-args)
     (multiple-value-bind (varargs-types varargs-ctypes varargs-fargs rettype)
         (parse-args-and-types varargs)
-      (let ((fixed-syms (make-gensym-list (length fixed-fargs)))
-            (varargs-syms (make-gensym-list (length varargs-fargs))))
+      (let* ((fixed-syms (make-gensym-list (length fixed-fargs)))
+             (varargs-syms (make-gensym-list (length varargs-fargs)))
+             (varargs-syms-promoted
+              (loop for sym in varargs-syms
+                    and type in varargs-ctypes
+                    if (eq type :float)
+                    collect `(float ,sym 1.0d0)
+                    else collect sym))
+             (syms (append fixed-syms varargs-syms-promoted))
+             (fargs (append fixed-fargs varargs-fargs))
+             (types (append fixed-types varargs-types))
+             (varargs-ctypes-promoted (mapcar 'promote-varargs-type varargs-ctypes))
+             (ctypes (append fixed-ctypes varargs-ctypes-promoted))
+             (fsbvp  (fn-call-by-value-p types rettype)))
+    (if fsbvp
+         (funcall *foreign-structures-by-value*
+                  thing
+                  fargs
+                  syms
+                  types
+                  rettype
+                  ctypes
+                  pointerp)
         (translate-objects
-         (append fixed-syms varargs-syms)
-         (append fixed-fargs varargs-fargs)
-         (append fixed-types varargs-types)
+         syms fargs types
          rettype
          `(,(if pointerp '%foreign-funcall-pointer-varargs '%foreign-funcall-varargs)
             ,thing
             ,(mapcan #'list fixed-ctypes fixed-syms)
             ,(append
               (mapcan #'list
-                      (mapcar #'promote-varargs-type varargs-ctypes)
-                      (loop for sym in varargs-syms
-                            and type in varargs-ctypes
-                            if (eq type :float)
-                              collect `(float ,sym 1.0d0)
-                            else collect sym))
+                      varargs-ctypes-promoted
+                      varargs-syms-promoted)
               (list (canonicalize-foreign-type rettype)))
-            ,@options))))))
+            ,@options)))))))
 
 (defmacro foreign-funcall-varargs (name-and-options fixed-args
                                    &rest varargs)
