@@ -836,8 +836,8 @@ target package."
   (let ((test-fn (typecase value
                    (number)
                    (t 'equal))))
-    `(alexandria:define-constant ,(json-name-to-cffi-name name :constant)
-         ,value ,@(when test-fn `(:test ',test-fn)))))
+    `(defparameter ,(json-name-to-cffi-name name :constant)
+         ,value )))
 
 (define-processor const (name type (value :value :otherwise nil))
   (expected-json-keys -json-entry- :tag :name :type :value :ns)
