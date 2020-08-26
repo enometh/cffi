@@ -178,7 +178,7 @@
          ,@(remove nil
                    (mapcar (lambda (key)
                              (unless (keywordp key)
-                               `(defconstant ,key ,(foreign-enum-value type key))))
+                               `(defparameter ,key ,(foreign-enum-value type key))))
                            (foreign-enum-keyword-list type)))))))
 
 (defmacro defcenum (name-and-options &body enum-list)
