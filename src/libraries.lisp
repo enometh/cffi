@@ -336,9 +336,14 @@ This will need to be extended as we test on more OSes."
   (flet ((%do-load (lib name spec)
            (let ((canary (getf (foreign-library-options lib) :canary)))
              (cond
-               ((and canary (foreign-symbol-pointer canary))
+               ((and canary (foreign-symbol-pointer canary)
+                     (or (not (foreign-library-load-state lib))
+                         (eql (foreign-library-load-state lib) :static)))
                 ;; Do nothing because the library is already loaded.
-                (setf (foreign-library-load-state lib) :static))
+                (warn "%DO-LOAD-FOREIGN-LIBRARY: CANARY ~S - NOT OPENING"
+                      (list canary (foreign-library-load-state lib)))
+                (unless (foreign-library-load-state lib)
+                  (setf (foreign-library-load-state lib) :static)))
                ((foreign-library-spec lib)
                 (with-slots (handle pathname) lib
                   (setf (values handle pathname)
@@ -415,13 +420,18 @@ the library as loaded and return."
   "Closes a foreign library."
   (let* ((library (filter-pathname library))
          (lib (get-foreign-library library))
+         (canary (getf (foreign-library-options lib) :canary))
          (handle (foreign-library-handle lib)))
+    (if (and canary (foreign-symbol-pointer canary))
+        (progn (warn "CLOSE-FOREIGN-LIBRARY: CANARY ~S - NOT CLOSING"
+                     (list (foreign-library-load-state lib)))
+               nil)
     (when handle
       (%close-foreign-library handle)
       (setf (foreign-library-handle lib) nil)
       ;; Reset the load state only when the library was externally loaded.
       (setf (foreign-library-load-state lib) nil)
-      t)))
+      t))))
 
 (defun reload-foreign-libraries (&key (test #'foreign-library-loaded-p))
   "(Re)load all currently loaded foreign libraries."
