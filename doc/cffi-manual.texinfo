@@ -6337,7 +6337,7 @@ The following example would achieve the same effect:
 @item library-designator
 A library designator.
 
-@item library-designator
+@item library
 An instance of @code{foreign-library}.
 @end table
 
