@@ -75,7 +75,7 @@ the generated definitions via C2FFI-SPEC-PACKAGE."
     (when (or (not (probe-file spec-file))
 	      (> (file-write-date input-file) (file-write-date spec-file)))
       (let ((cffi/c2ffi::*known-archs* nil))
-	(apply #'cffi/c2ffi::generate-spec-with-c2ffi
+	(apply #'cffi/c2ffi::generate-spec-using-c2ffi
 	       input-file spec-file
 	       generate-spec-args
 	       ;;:arch "i686-pc-linux-gnu"
