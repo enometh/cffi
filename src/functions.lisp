@@ -103,7 +103,7 @@
 
 (defvar *foreign-structures-by-value*
   (lambda (&rest args)
-    (declare (ignore args))
+    (declare (ignorable args))
     (restart-case
         (error "Unable to call structures by value without cffi-libffi loaded.")
       (load-cffi-libffi () :report "Load cffi-libffi."
