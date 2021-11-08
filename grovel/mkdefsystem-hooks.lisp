@@ -6,58 +6,94 @@
 ;;; XXX: compiles a shared library for each lisp implementation
 ;;; instead of using a single library for all implementations
 
+(defun cffi-grovel-compiler (input-file &rest args &key output-file
+			     &allow-other-keys)
+  "mk-defsystem compiler for the :cffi-grovel lanaguage"
+  (format t "~%~S~%" `(cffi-grovel-compiler ,input-file ,@args))
+  (format t "~%~S~%" `(process-grovel-file ,input-file ,output-file))
+  (let* ((tmp-file
+	  (cffi-grovel:process-grovel-file input-file
+					   output-file))
+	 (compile-args (copy-list args)))
+    ;; XXX no need to massage compile-args. remove?
+    (assert (getf args :output-file) nil "defsystem did not pass the output-file parameter for the binary pathname")
+    (format t "~%~S~%" `(compile-file ,tmp-file ,@compile-args))
+    (apply #'compile-file tmp-file compile-args)))
+
+(defun cffi-grovel-loader (filespec &rest args)
+  "mk-defsystem loader for the  :cffi-grovel lanaguage"
+  (format t "~%~S~%" `(cffi-grovel-loader ,filespec ,@args))
+  (assert (not mk::*load-source-instead-of-binary*) nil "Unsupported")
+  (assert (not mk::*load-source-if-no-binary*) nil "Unsupported")
+  (apply #'load filespec args))
+
+(defun delete-binaries-cffi-grovel-output-files (c)
+  "mk-defsystem output-files lister for the :cffi-grovel lanaguage"
+  (let* ((input (mk::component-full-pathname c :source))
+	 (output (mk::component-full-pathname c :binary))
+	 (c-file (generate-c-file input output))
+	 (o-file (make-o-file-name c-file))
+	 (exe-file (make-exe-file-name c-file))
+	 (lisp-file (tmp-lisp-file-name c-file)))
+    (list c-file o-file exe-file lisp-file output)))
+
 (mk:define-language :cffi-grovel
-    :compiler #'(lambda (input-file &rest args &key output-file
-			 &allow-other-keys)
-		  (format t "~%~S~%" `(cffi-grovel-compiler ,input-file ,@args))
-		  (format t "~%~S~%" `(process-grovel-file ,input-file ,output-file))
-		  (let* ((tmp-file
-			  (cffi-grovel:process-grovel-file input-file
-							   output-file))
-			 (compile-args (copy-list args)))
-		    ;; XXX no need to massage compile-args. remove?
-		    (assert (getf args :output-file) nil "defsystem did not pass the output-file parameter for the binary pathname")
-		    (format t "~%~S~%" `(compile-file ,tmp-file ,@compile-args))
-		    (apply #'compile-file tmp-file compile-args)))
-    :loader #'(lambda (filespec &rest args)
-		(format t "~%~S~%" `(cffi-grovel-loader ,filespec ,@args))
-		(assert (not mk::*load-source-instead-of-binary*) nil "Unsupported")
-		(assert (not mk::*load-source-if-no-binary*) nil "Unsupported")
-		(apply #'load filespec args))
+    :compiler #'cffi-grovel-compiler
+    :loader #'cffi-grovel-loader
     :source-extension (car mk::*filename-extensions*)
-    :binary-extension (cdr mk::*filename-extensions*))
+    :binary-extension (cdr mk::*filename-extensions*)
+    :output-files #'delete-binaries-cffi-grovel-output-files)
+
+(defun cffi-wrapper-compiler (input-file &rest args &key output-file
+			      &allow-other-keys)
+  "mk-defsystem compiler for the :cffi-wrapper lanaguage"
+  (format t "~%~S~%" `(cffi-wrapper-compiler ,input-file ,@args))
+  (let ((lib-soname
+	 ;; can't use file-namestring on filename.lisp
+	 ;; since make-so-file-name gets called. that
+	 ;; calls make-pathme with :type and
+	 ;; :defaults.
+	 (pathname-name input-file)))
+    (format t "~%~S~%" `(process-wrapper-file
+			 ,input-file
+			 :output-defaults ,output-file
+			 :lib-soname ,lib-soname))
+    (multiple-value-bind (tmp-file so-file)
+	(cffi-grovel:process-wrapper-file
+	 input-file :output-defaults output-file
+	 :lib-soname lib-soname)
+      (format t "~%=> ~S~%" (list tmp-file so-file))
+      (let ((compile-args (copy-list args)))
+	;; XXX no need to massage compile-args. remove?
+	(assert (getf args :output-file) nil "defsystem did not pass the output-file parameter for the binary pathname")
+	(format t "~%~S~%" `(compile-file ,tmp-file ,@compile-args))
+	(apply #'compile-file tmp-file compile-args)))))
+
+(defun cffi-wrapper-loader (filespec &rest args)
+  "mk-defsystem loader for the :cffi-wrapper lanaguage"
+  (format t "~%~S~%" `(cffi-wrapper-loader ,filespec ,@args))
+  (assert (not mk::*load-source-instead-of-binary*) nil "Unsupported")
+  (assert (not mk::*load-source-if-no-binary*) nil "Unsupported")
+  (apply #'load filespec args))
+
+(defun delete-binaries-cffi-wrapper-output-files (c)
+  "mk-defsystem output-files lister for the :cffi-wrapper lanaguage"
+  (let* ((input (mk::component-full-pathname c :source))
+	 (output (mk::component-full-pathname c :binary))
+	 (c-file (generate-c-lib-file input output))
+	 (o-file (make-o-file-name output "__wrapper"))
+	 (lib-soname (pathname-name input))
+	 (lib-file (make-so-file-name
+		    (make-soname lib-soname output)))
+	 (lisp-file (tmp-lisp-file-name output)))
+    (list c-file o-file lib-file lisp-file)))
 
 (mk:define-language :cffi-wrapper
-    :compiler #'(lambda (input-file &rest args &key output-file
-			 &allow-other-keys)
-		  (format t "~%~S~%" `(cffi-wrapper-compiler ,input-file ,@args))
-		  (let ((lib-soname
-			 ;; can't use file-namestring on filename.lisp
-			 ;; since make-so-file-name gets called. that
-			 ;; calls make-pathme with :type and
-			 ;; :defaults.
-			 (pathname-name input-file)))
-		    (format t "~%~S~%" `(process-wrapper-file
-					 ,input-file
-					 :output-defaults ,output-file
-					 :lib-soname ,lib-soname))
-		    (multiple-value-bind (tmp-file so-file)
-			(cffi-grovel:process-wrapper-file
-			 input-file :output-defaults output-file
-			 :lib-soname lib-soname)
-		      (format t "~%=> ~S~%" (list tmp-file so-file))
-		      (let ((compile-args (copy-list args)))
-			;; XXX no need to massage compile-args. remove?
-			(assert (getf args :output-file) nil "defsystem did not pass the output-file parameter for the binary pathname")
-			(format t "~%~S~%" `(compile-file ,tmp-file ,@compile-args))
-			(apply #'compile-file tmp-file compile-args)))))
-    :loader #'(lambda (filespec &rest args)
-		(format t "~%~S~%" `(cffi-wrapper-loader ,filespec ,@args))
-		(assert (not mk::*load-source-instead-of-binary*) nil "Unsupported")
-		(assert (not mk::*load-source-if-no-binary*) nil "Unsupported")
-		(apply #'load filespec args))
+    :compiler #'cffi-wrapper-compiler
+    :loader #'cffi-wrapper-loader
     :source-extension (car mk::*filename-extensions*)
-    :binary-extension (cdr mk::*filename-extensions*))
+    :binary-extension (cdr mk::*filename-extensions*)
+    :output-files #'delete-binaries-cffi-wrapper-output-files)
 
 ;; TODO rename - and wrapper
 (defun mk-clean-grovel (system &key dry-run)
