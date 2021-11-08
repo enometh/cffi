@@ -104,7 +104,23 @@ the generated definitions via C2FFI-SPEC-PACKAGE."
     :compiler 'mk-c2ffi-cc
     :loader 'mk-c2ffi-ld
     :source-extension "h"
-    :binary-extension (cdr mk::*filename-extensions*))
+    :binary-extension (cdr mk::*filename-extensions*)
+    :output-files
+    (lambda (c)
+      (let* ((input (mk::component-full-pathname c :source))
+	     (output (mk::component-full-pathname c :binary))
+	     (spec (merge-pathnames
+		    (make-pathname :directory nil
+				   :defaults (cffi/c2ffi::spec-path
+					      (pathname input)))
+		    output))
+	     (tmp (make-pathname :name
+				 (concatenate 'string
+					      (pathname-name spec)
+					      ".cffi-tmp")
+				 :type "lisp"
+				 :defaults spec)))
+	(list tmp spec output))))
 
 (defun mk-clean-c2ffi (system &key dry-run (handle-errors t))
   (let (ret)
