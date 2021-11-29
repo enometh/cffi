@@ -217,7 +217,7 @@ WITH-POINTER-TO-VECTOR-DATA."
   (progn
     (when (stringp pointer)
       (setf pointer `(%foreign-symbol-pointer ,pointer nil)))
-    `(si:call-cfun ,pointer ,return-type (list ,@types) (list ,@values))))
+    `(si:call-cfun ,pointer ,return-type (list ,@types) (list ,@values) :cdecl)))
 
 
 (defun foreign-funcall-parse-args (args)
