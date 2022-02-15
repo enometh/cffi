@@ -381,25 +381,33 @@ This will need to be extended as we test on more OSes."
     (pathname (namestring thing))
     (t        thing)))
 
-(defun load-foreign-library (library &key search-path)
+(defun load-foreign-library (library &key search-path reopen)
   "Loads a foreign LIBRARY which can be a symbol denoting a library defined
 through DEFINE-FOREIGN-LIBRARY; a pathname or string in which case we try to
 load it directly first then search for it in *FOREIGN-LIBRARY-DIRECTORIES*;
 or finally list: either (:or lib1 lib2) or (:framework <framework-name>).
 The option :CANARY can specify a symbol that will be searched to detect if
 the library is already loaded, in which case DEFINE-FOREIGN-LIBRARY will mark
-the library as loaded and return."
-  (let ((library (filter-pathname library)))
+the library as loaded and return.
+
+If the library the library is already loaded, do nothing unless reopen
+is non-NIL, in which case close the library first.
+"
+  (let* ((library (filter-pathname library))
+         (lib (ignore-some-conditions (foreign-library-undefined-error)
+                (get-foreign-library library))))
+
     (restart-case
         (progn
-          ;; dlopen/dlclose does reference counting, but the CFFI-SYS
-          ;; API has no infrastructure to track that. Therefore if we
-          ;; want to avoid increasing the internal dlopen reference
-          ;; counter, and thus thwarting dlclose, then we need to try
-          ;; to call CLOSE-FOREIGN-LIBRARY and ignore any signaled
-          ;; errors.
-          (ignore-some-conditions (foreign-library-undefined-error)
-            (close-foreign-library library))
+          (when (and lib reopen)
+            ;; dlopen/dlclose does reference counting, but the CFFI-SYS
+            ;; API has no infrastructure to track that. Therefore if we
+            ;; want to avoid increasing the internal dlopen reference
+            ;; counter, and thus thwarting dlclose, then we need to try
+            ;; to call CLOSE-FOREIGN-LIBRARY and ignore any signaled
+            ;; errors.
+            (ignore-some-conditions (foreign-library-undefined-error)
+              (close-foreign-library library)))
           (%do-load-foreign-library library search-path))
       ;; Offer these restarts that will retry the call to
       ;; %LOAD-FOREIGN-LIBRARY.
