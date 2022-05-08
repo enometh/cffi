@@ -61,7 +61,7 @@
 	append (loop for (nam . _sym) in val
 		     collect nam)))
 
-(defun get-conflict-names (spec-package &optional package)
+(defun get-conflict-names (spec-package &optional (package *package*))
   (loop for nam in (get-exported-names spec-package)
 	for (sym status) = (multiple-value-list
 			    (find-symbol nam package))
@@ -80,7 +80,7 @@ symbols which have to be accessed explictly"
   (let ((conflicts-alist
 	  (mapcar (lambda (pkg)
 		    (cons pkg (get-conflict-names spec-package pkg)))
-		  (package-use-list package))))
+		  (adjoin package (package-use-list package)))))
     (shadowing-import (loop for (_pkg . conflicts) in conflicts-alist
 			    nconc (mapcar (lambda (x)
 					    (find-symbol x spec-package))
