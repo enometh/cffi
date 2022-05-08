@@ -1,6 +1,6 @@
 ;;; -*- Mode: LISP; Package: :cl-user; BASE: 10; Syntax: ANSI-Common-Lisp; -*-
 ;;;
-;;;   Time-stamp: <2020-03-23 11:21:42 IST>
+;;;   Time-stamp: <>
 ;;;   Touched: Sun Mar 22 19:53:30 2020 +0530 <enometh@net.meer>
 ;;;   Bugs-To: enometh@net.meer
 ;;;   Status: Experimental.  Do not redistribute
