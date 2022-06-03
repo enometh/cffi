@@ -201,7 +201,7 @@ all libraries are returned."
            (apply #'append options (mapcar #'cddr spec))))
       (assert (subsetp (loop for (key . nil) on all-options by #'cddr
                              collect key)
-                       '(:convention :search-path)))
+                       '(:convention :search-path :canary)))
       (when cconv-p
         (warn-obsolete-argument :cconv :convention))
       (when calling-convention-p
