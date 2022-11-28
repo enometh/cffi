@@ -57,7 +57,7 @@
   :source-pathname *cffi-source-directory*
   :binary-pathname *cffi-binary-directory*
   :source-extension "lisp"
-  :depends-on (:uiop :alexandria :trivial-features :babel :defsystem)
+  :depends-on (:uiop :alexandria :trivial-features :babel #| #-mkcl :defsystem |#)
   :components
   ((:module "src"
     :components
