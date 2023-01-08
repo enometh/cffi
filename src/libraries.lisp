@@ -233,6 +233,34 @@ the USE-FOREIGN-LIBRARY macro."
     (check-type name symbol)
     `(register-foreign-library ',name ',pairs ,@options)))
 
+#|| ;madhu 230108 - handle ldscripts
+Unable to load foreign library (LIBM.SO-1431).
+  Error opening shared library libm.so : /usr/lib64/libm.so: invalid ELF header.
+   [Condition of type LOAD-FOREIGN-LIBRARY-ERROR]
+
+(LOAD-FOREIGN-LIBRARY "libm.so" :SEARCH-PATH '(#P"/usr/lib64") :REOPEN NIL)
+where libm.so is a GNU ld script
+```
+OUTPUT_FORMAT(elf64-x86-64)
+GROUP ( /lib64/libm.so.6  AS_NEEDED ( /lib64/libmvec.so.1 ) )
+```
+To debug:
+(declaim (optimize (speed 0) (safety 1) (debug 3)))
+||#
+
+(defun read-ld-script-for-link (path)
+  "Crock. If PATH is a ldscript instead of a shared library try to
+guess what it links to."
+  (with-open-file (stream path :element-type 'character)
+    (loop for line = (read-line stream nil)
+	  for lineno below 10           ;arbitrary!
+	  with needle = "GROUP ( " with needle-len = (length needle)
+	  if (and (> (length line) needle-len)
+		  (string= needle line :end2 needle-len))
+	  return (let ((p (position #\Space line :start needle-len)))
+		   (string-trim #(#\Space #\Tab #\Newline)
+				(subseq line needle-len p))))))
+
 ;;;# LOAD-FOREIGN-LIBRARY-ERROR condition
 ;;;
 ;;; The various helper functions that load foreign libraries can
@@ -278,7 +306,21 @@ ourselves."
               (values (%load-foreign-library name (native-namestring file))
                       file)
             (simple-error (error)
-              (report-simple-error name error)))
+              ;; ;madhu 230108 try to handle the case where the load
+              ;; failed because it happened to be an ld-script
+              (let ((alt (ignore-errors (read-ld-script-for-link file))))
+                (cond (alt
+                       (format t "LDSCRIPT: Failed: to load foreign library (~A).~%  ~A~&"
+                               name
+                               (format nil "~?" (simple-condition-format-control error)
+                                       (simple-condition-format-arguments error)))
+                       (format t "LDSCRIPT: Instead: trying to load ~A found in ld script~&" alt)
+                       (handler-case
+                           (values (%load-foreign-library name alt)
+                                   (pathname alt))
+                         (simple-error (error)
+                           (report-simple-error name error))))
+                      (t (report-simple-error name error))))))
           (report-simple-error name error))))))
 
 (defun try-foreign-library-alternatives (name library-list &optional search-path)
