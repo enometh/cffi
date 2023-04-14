@@ -106,10 +106,20 @@ be stack allocated if supported by the implementation."
   #-(or lispworks3 lispworks4 lispworks5.0)
   (make-array size :element-type '(unsigned-byte 8) :allocation :static))
 
+#+(not (and :LISPWORKS8 :LISPWORKS-64BIT))
 (defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
   "Bind PTR-VAR to a pointer at the data in VECTOR."
   `(fli:with-dynamic-lisp-array-pointer (,ptr-var ,vector)
      ,@body))
+
+#+(and :LISPWORKS8 :LISPWORKS-64BIT)
+(defmacro with-pointer-to-vector-data ((ptr-var vector) &body body)
+  "Bind PTR-VAR to a pointer at the data in VECTOR."
+  (let ((vec (gensym "VECTOR-")))
+    `(let ((,vec ,vector))
+       (hcl:with-pinned-objects (,vec)
+         (fli:with-dynamic-lisp-array-pointer (,ptr-var ,vec)
+           ,@body)))))
 
 ;;;# Dereferencing
 
