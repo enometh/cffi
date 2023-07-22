@@ -216,6 +216,10 @@ int main(int argc, char**argv) {
                      (case (form-kind f)
                        (flag (warn "Groveler clause FLAG is deprecated, use CC-FLAGS instead.")))
                      (case (form-kind f)
+
+;madhu 230722 --FIXME -- all C-M-e evaluations below this fail because
+;of this in-package form
+
                        (in-package
                         (setf *package*
                               (or (find-package (second f))
