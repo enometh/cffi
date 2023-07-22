@@ -243,6 +243,10 @@ int main(int argc, char**argv) {
   (make-pathname :name (strcat (pathname-name defaults) ".grovel-tmp")
                  :type "lisp" :defaults defaults))
 
+
+(defun handle-dot-include-path (input-file)
+  (format nil "-I~A" (directory-namestring input-file)))
+
 
 
 ;;; *PACKAGE* is rebound so that the IN-PACKAGE form can set it during
@@ -253,11 +257,12 @@ int main(int argc, char**argv) {
            (o-file (make-o-file-name c-file))
            (exe-file (make-exe-file-name c-file))
            (lisp-file (tmp-lisp-file-name c-file))
-           (inputs (list (cc-include-grovel-argument) c-file)))
+           (inputs (list (cc-include-grovel-argument) c-file))
+           (extra-cflags (list (handle-dot-include-path input-file))))
       (handler-case
           (progn
             ;; at least MKCL wants to separate compile and link
-            (cc-compile o-file inputs)
+            (cc-compile o-file inputs extra-cflags)
             (link-executable exe-file (list o-file)))
         (error (e)
           (grovel-error "~a" e)))
