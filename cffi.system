@@ -372,7 +372,8 @@ gcc  -o libfsbv.so -shared -Wall -std=c99 -pedantic -fPIC libfsbv.c -lm
     ((:file "package")
      (:file "c2ffi" :depends-on ("package"))
      #+nil
-     (:file "asdf" :depends-on ("package" "c2ffi"))))))
+     (:file "asdf" :depends-on ("package" "c2ffi"))
+     (:file "utils")))))
 
 #+nil
 (mk:compile-system :cffi-c2ffi)
