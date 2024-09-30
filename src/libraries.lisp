@@ -540,3 +540,12 @@ is non-NIL, in which case close the library first.
           when (funcall test name)
             do (load-foreign-library name))
     libs))
+
+(defun find-foreign-library (string)
+  "Experimental. Return non-NIL if library matching STRING is already
+loaded.  (returns a list of libraries)"
+  (loop for k being each hash-key of cffi::*foreign-libraries*
+	using (hash-value v)
+	if (search string (namestring (cffi::foreign-library-pathname v)))
+	collect k))
+
