@@ -491,3 +491,15 @@ is non-NIL, in which case close the library first.
           when (funcall test name)
             do (load-foreign-library name))
     libs))
+
+(defun find-foreign-library (string)
+  "Experimental. Return non-NIL if library matching STRING is already
+loaded and known to CFFI. Matching is string search via CL:SEARCH on
+the library pathname.  (actually returns a list of CL symbols which
+index theq library objects in cffi::*foreign-libraries."
+  (loop for k being each hash-key of cffi::*foreign-libraries*
+	using (hash-value v)
+        when (let ((pathname (cffi::foreign-library-pathname v)))
+               (and pathname (search string (namestring pathname))))
+	collect k))
+

@@ -242,6 +242,7 @@
    #:use-foreign-library
    #:close-foreign-library
    #:reload-foreign-libraries
+   #:find-foreign-library
 
    ;; Callbacks.
    #:callback
