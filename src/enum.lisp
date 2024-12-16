@@ -62,8 +62,11 @@
     :reader allow-undeclared-values))
   (:documentation "Describes a foreign enumerated type."))
 
-(deftype enum-key ()
+(deftype enum-key-1 ()
   '(and symbol (not null)))
+
+(deftype enum-key ()
+  '(or enum-key-1 (cons enum-key-1 (or null (cons enum-key-1)))))
 
 (defparameter +valid-enum-base-types+ *built-in-integer-types*)
 
@@ -206,13 +209,26 @@
 
 (defun %foreign-enum-value (type keyword &key errorp)
   (check-type keyword enum-key)
-  (or (gethash keyword (keyword-values type))
+  (or (if (consp keyword)
+          (loop with ret = nil
+                for keyword in keyword
+                for val = (%foreign-enum-value type keyword :errorp errorp)
+                do (cond ((null val) ;; (assert (not errorp))
+                          (warn "No FOREIGN-ENUM-VALUE: ~S ~S." type keyword)
+                          (return nil))
+                         ((null ret) (setq ret val))
+                         (t (setq ret (logior ret val))))
+                finally (return ret))
+          (gethash keyword (keyword-values type)))
       (when errorp
         (error "~S is not defined as a keyword for enum type ~S."
                keyword type))))
 
 (defun foreign-enum-value (type keyword &key (errorp t))
-  "Convert a KEYWORD into an integer according to the enum TYPE."
+  "Convert a KEYWORD into an integer according to the enum TYPE.
+If instead KEYWORD is instead of keywords, return the LOGIORed value
+of the integers denoted by the keywords. If ERRORP is NIL return NIL
+if any of the KEYWORD "
   (let ((type-obj (ensure-parsed-base-type type)))
     (if (not (typep type-obj 'foreign-enum))
       (error "~S is not a foreign enum type." type)
