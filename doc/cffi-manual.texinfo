@@ -3225,6 +3225,13 @@ corresponds to @var{keyword} in @var{type}.
 An error is signaled if @var{type} doesn't contain such
 @var{keyword}, and @var{errorp} is true.
 
+@var{keyword} can be a list of keywords, in which case
+@code{foreign-enum-value} returns the LOGIOR of the individual values
+that correspond to each keyword in @var{type}.  Returns NIL if
+@var{errorp} is false and any one of these keywords is not defined in
+@var{type}.
+
+
 @subheading Examples
 @lisp
 (defcenum boolean

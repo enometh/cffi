@@ -66,6 +66,15 @@
          (eq :true (return-enum2 :true)))
   t)
 
+(deftest enum.4
+    (=  (foreign-enum-value 'numeros '(:one :two :four))
+        (logior 1 2 4))
+    t)
+
+(deftest enum.5
+    (null (foreign-enum-value 'numeros '(:one :two :five) :errorp nil))
+    t)
+
 (defctype numeros-typedef numeros)
 
 (deftest enum.typedef.1
