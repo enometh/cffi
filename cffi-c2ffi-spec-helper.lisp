@@ -55,38 +55,83 @@
 				"+FIELD-NAMES+"))
 
 (defun get-exported-names (spec-package)
+  (setq spec-package (find-package spec-package))
   (loop for name in *c2ffi-defined-names*
 	for var = (find-symbol name spec-package)
 	for val = (symbol-value var)
+	when (eql (symbol-package var) spec-package)
 	append (loop for (nam . _sym) in val
 		     collect nam)))
 
 (defun get-conflict-names (spec-package &optional (package *package*))
+  (setq package (find-package package))
+  (setq spec-package (find-package spec-package))
   (loop for nam in (get-exported-names spec-package)
 	for (sym status) = (multiple-value-list
 			    (find-symbol nam package))
-	if (and sym (eql status :external))
+	for (ext-sym ext-status) = (multiple-value-list
+				    (find-symbol nam spec-package))
+	if (and status ext-status #+nil (eql status :external)
+		#+nil (eql (symbol-package sym) package)
+		(not (eql sym ext-sym)))
 	  collect nam))
 
-(defun use-spec-package (spec-package &optional (package *package*))
+(defun use-spec-package (spec-package &optional (package *package*) &key (dry-run-p))
   "Use all symbols in SPEC-PACKAGE which are \"exported\" via the
 variables in *C2FFI-DEFINED-NAMES*.  Conflicts are avoided by via
-SHADOWING-IMPORT of any symbols which may conflict. Returns a list of
-symbols which have to be accessed explictly"
-  (unuse-package spec-package package)
-  (export (mapcar (lambda (x) (find-symbol x spec-package))
-		  (get-exported-names spec-package))
-	  spec-package)
-  (let ((conflicts-alist
-	  (mapcar (lambda (pkg)
-		    (cons pkg (get-conflict-names spec-package pkg)))
-		  (adjoin package (package-use-list package)))))
-    (shadowing-import (loop for (_pkg . conflicts) in conflicts-alist
-			    nconc (mapcar (lambda (x)
-					    (find-symbol x spec-package))
-					  conflicts))
-		      package)
-    (use-package spec-package package)
+SHADOWING-IMPORT of any symbols which may conflict, before calling
+use-package. Returns a list of symbols which have to be accessed
+explictly."
+  (setq spec-package (find-package spec-package))
+  (setq package (find-package package))
+  (unless dry-run-p
+    (unuse-package spec-package package)
+    (export (mapcar (lambda (x) (find-symbol x spec-package))
+		    (get-exported-names spec-package))
+	    spec-package))
+  (let* ((conflicting-names (get-conflict-names spec-package package))
+	 (conflicts (mapcar
+		     (lambda (name)
+		       (multiple-value-bind (sym stat)
+			   (find-symbol name spec-package)
+			 (assert stat)
+			 sym))
+		     conflicting-names)))
+    (unless dry-run-p
+      (shadowing-import conflicts package)
+      (use-package spec-package package))
     ;; return a list of symbols that should be explicitly qualified.
-    (loop for (pkg . conflicts) in conflicts-alist
-	  nconc (mapcar (lambda (x) (find-symbol x pkg)) conflicts))))
+    (mapcar (lambda (name)
+	      (multiple-value-bind (sym stat)
+		  (find-symbol name package)
+		(assert stat)
+		sym))
+	    conflicting-names)))
+
+
+
+#||
+(defun get-conflict-alist (spec-package &optional (package *package*))
+  (mapcar (lambda (pkg)
+	    (cons pkg (get-conflict-names spec-package pkg)))
+	  (adjoin package (package-use-list package))))
+
+#+nil
+(defun all-conflicting-syms (spec-package &optional (package *package*))
+  (loop for (_pkg . conflicts) in (get-conflict-alist spec-package package)
+	nconc (mapcar (lambda (x)
+			(find-symbol x spec-package))
+		      conflicts)))
+
+;; for testing a general package
+(defun get-exported-names (spec-package)
+  (setq spec-package (find-package spec-package))
+  (loop for sym being each external-symbol of spec-package
+	for nam = (symbol-name sym)
+	for (var stat) = (multiple-value-list
+			  (find-symbol nam spec-package))
+	do (assert (eq var sym))
+	(assert (eq stat :external))
+	when (eql (symbol-package sym) spec-package)
+	collect nam))
+||#
