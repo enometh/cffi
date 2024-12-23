@@ -134,4 +134,7 @@ explictly."
 	(assert (eq stat :external))
 	when (eql (symbol-package sym) spec-package)
 	collect nam))
+(length (get-exported-names :claw-cxx-xkb))
+(get-conflict-names :claw-cxx-xkb :claw-cxx-xkb-user)
+(get-conflict-alist :claw-cxx-xkb :claw-cxx-xkb-user)
 ||#
