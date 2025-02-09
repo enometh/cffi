@@ -428,19 +428,10 @@ field-name"
            ,@body))
       `(progn ,@body)))
 
-;;madhu 250131 handle
-;; (uffi:def-function "atol"
-;;    ((str (* :unsigned-char)))
-;;  :returning :long)
-(defun convert-uffi-fun-name (name)
-  (etypecase name
-    (cons name)
-    (string (list name (intern (string-upcase name))))))
-
 (defmacro def-function (name args &key module (returning :void))
   "Define a foreign function."
   (declare (ignore module))
-  `(cffi:defcfun ,(convert-uffi-fun-name name) ,(convert-uffi-type returning)
+  `(cffi:defcfun ,name ,(convert-uffi-type returning)
      ,@(loop for (name type) in args
              collect `(,name ,(convert-uffi-type type)))))
 
