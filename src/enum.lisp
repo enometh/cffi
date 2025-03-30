@@ -235,6 +235,7 @@ if any of the KEYWORD "
       (%foreign-enum-value type-obj keyword :errorp errorp))))
 
 (defun %foreign-enum-keyword (type value &key errorp)
+  (declare (notinline %foreign-enum-keyword))
   (check-type value integer)
   (or (gethash value (value-keywords type))
       (when errorp
@@ -243,6 +244,7 @@ if any of the KEYWORD "
 
 (defun foreign-enum-keyword (type value &key (errorp t))
   "Convert an integer VALUE into a keyword according to the enum TYPE."
+  (declare (notinline foreign-enum-keyword))
   (let ((type-obj (ensure-parsed-base-type type)))
     (if (not (typep type-obj 'foreign-enum))
         (error "~S is not a foreign enum type." type)
