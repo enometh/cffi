@@ -9,7 +9,7 @@
 (in-package "CL-USER")
 
 (defvar *cffi-c2ffi-spec-helper-source-dir*
-  (merge-pathnames "" (translate-logical-pathname "PROJECTS:")))
+  (merge-pathnames "cffi-c2ffi-spec-helper/" (translate-logical-pathname "PROJECTS:")))
 (defvar *cffi-c2ffi-spec-helper-binary-dir* (binary-directory *cffi-c2ffi-spec-helper-source-dir*))
 
 (mk:defsystem :cffi-c2ffi-spec-helper
