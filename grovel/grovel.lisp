@@ -247,9 +247,21 @@ int main(int argc, char**argv) {
   (make-pathname :name (strcat (pathname-name defaults) ".grovel-tmp")
                  :type "lisp" :defaults defaults))
 
+(defun fix-sbcl-homedir (file)
+  (unless (pathnamep file) (setq file (pathname file)))
+  #+sbcl
+  (let ((pd (pathname-directory file)))
+    (when (and (eql (car pd) :absolute)
+	       (eql (second pd) :home))
+      (let ((uhpd (pathname-directory (user-homedir-pathname))))
+	(assert (eql (car uhpd) :absolute))
+	(rplacd pd
+	      (append (copy-seq (cdr uhpd))
+		      (cddr pd))))))
+  file)
 
 (defun handle-dot-include-path (input-file)
-  (format nil "-I~A" (directory-namestring input-file)))
+  (format nil "-I~A" (directory-namestring (fix-sbcl-homedir input-file))))
 
 
 
