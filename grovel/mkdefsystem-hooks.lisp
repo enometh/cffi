@@ -40,7 +40,9 @@
 (mk:define-language :cffi-grovel
     :compiler #'cffi-grovel-compiler
     :loader #'cffi-grovel-loader
-    :source-extension (car mk::*filename-extensions*)
+    :source-extension "lisp"	     ; (car mk::*filename-extensions*)
+    ;;madhu 260707 - allegro uses "cl" for this but all the grovel
+    ;; files seem to be called "grovel.lisp"
     :binary-extension (cdr mk::*filename-extensions*)
     :output-files #'delete-binaries-cffi-grovel-output-files)
 
