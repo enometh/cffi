@@ -47,7 +47,7 @@
 
 (defun pointerp (ptr)
   "Return true if PTR is a foreign pointer."
-  (ff:foreign-address-p ptr))
+  (ff:foreign-pointer-p ptr))
 
 (defun pointer-eq (ptr1 ptr2)
   "Return true if PTR1 and PTR2 point to the same address."
